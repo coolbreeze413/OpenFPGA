@@ -146,14 +146,6 @@ if(NOT MSVC)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3")
 endif()
 
-#The mingw-w64 headers and ABC's pthread.h have conflicting definitions of struct timespec.
-#Adding this define suppresses the duplicate definition in ABC's pthread.h
-add_definitions(-DHAVE_STRUCT_TIMESPEC=1)
-
-#This forces ABC to use the stdint types (e.g. ptrdiff_t) instead of its platform
-#dependant type look-up. This avoids 'unkown platform' compilation errors.
-add_definitions(-DABC_USE_STDINT_H=1)
-
 # Set WARN FLAGS
 set(WARN_FLAGS "")
 
@@ -294,22 +286,24 @@ include(CMakeParseArguments)
 
 ##project(yosys)
 
-# Options to enable/disable dependencies
-option(YOSYS_ENABLE_TCL, "Enable TCL parser integrated in yosys" ON)
-option(YOSYS_ENABLE_ABC, "Enable ABC library integrated in yosys" ON)
-option(YOSYS_ENABLE_PLUGINS, "Enable plug-in in yosys" ON)
-option(YOSYS_ENABLE_READLINE, "Enable readline library in yosys" ON)
-option(YOSYS_ENABLE_VERIFIC, "Enable verification library in yosys" OFF)
-option(YOSYS_ENABLE_COVER, "Enable coverage test in yosys" ON)
-option(YOSYS_ENABLE_LIBYOSYS, "Enable static library compiled yosys" OFF)
-option(YOSYS_ENABLE_GPROF, "Enable profiling in compiled yosys" OFF)
-option(YOSYS_ENABLE_NDEBUG, "Enable non-debugging feature in compiled yosys" OFF)
+if (OPENFPGA_WITH_YOSYS)
+    # Options to enable/disable dependencies
+    option(YOSYS_ENABLE_TCL, "Enable TCL parser integrated in yosys" ON)
+    option(YOSYS_ENABLE_ABC, "Enable ABC library integrated in yosys" ON)
+    option(YOSYS_ENABLE_PLUGINS, "Enable plug-in in yosys" ON)
+    option(YOSYS_ENABLE_READLINE, "Enable readline library in yosys" ON)
+    option(YOSYS_ENABLE_VERIFIC, "Enable verification library in yosys" OFF)
+    option(YOSYS_ENABLE_COVER, "Enable coverage test in yosys" ON)
+    option(YOSYS_ENABLE_LIBYOSYS, "Enable static library compiled yosys" OFF)
+    option(YOSYS_ENABLE_GPROF, "Enable profiling in compiled yosys" OFF)
+    option(YOSYS_ENABLE_NDEBUG, "Enable non-debugging feature in compiled yosys" OFF)
 
-#
-## Search and link dependent packages
-## We need readline to compile 
-if (YOSYS_ENABLE_READLINE)
-  find_package(Readline REQUIRED)
+    #
+    ## Search and link dependent packages
+    ## We need readline to compile 
+    if (YOSYS_ENABLE_READLINE)
+    find_package(Readline REQUIRED)
+    endif()
 endif()
 
 #PugiXml has some deliberate switch fallthrough cases (as indicated by comments), but they
