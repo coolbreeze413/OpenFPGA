@@ -88,15 +88,12 @@ jobs:
         printf "\n\n >>>create package dir <<<\n"
         export OPENFPGA_PACKAGE_DIR=${PWD}/package
         mkdir -p ${OPENFPGA_PACKAGE_DIR}/bin
-        cp -fv ${OPENFPGA_INSTALL_DIR}/bin/* ${OPENFPGA_PACKAGE_DIR}/bin/
+        cp -fv ${OPENFPGA_INSTALL_DIR}/bin/vpr.exe ${OPENFPGA_PACKAGE_DIR}/bin/
+        cp -fv ${OPENFPGA_INSTALL_DIR}/bin/openfpga.exe ${OPENFPGA_PACKAGE_DIR}/bin/
         printf "\n\n >>> copy mingw dependency libs: vpr.exe <<<\n"
         for f in `ldd ${OPENFPGA_PACKAGE_DIR}/bin/vpr.exe | cut -d' ' -f 3 | grep mingw | uniq`; do cp -fv ${f} ${OPENFPGA_PACKAGE_DIR}/bin; done
         printf "\n\n >>> copy mingw dependency libs: openfpga.exe <<<\n"
         for f in `ldd ${OPENFPGA_PACKAGE_DIR}/bin/openfpga.exe | cut -d' ' -f 3 | grep mingw | uniq`; do cp -fv ${f} ${OPENFPGA_PACKAGE_DIR}/bin; done
-        printf "\n\n >>> copy mingw dependency libs: genfasm.exe <<<\n"
-        for f in `ldd ${OPENFPGA_PACKAGE_DIR}/bin/genfasm.exe | cut -d' ' -f 3 | grep mingw | uniq`; do cp -fv ${f} ${OPENFPGA_PACKAGE_DIR}/bin; done
-        printf "\n\n >>> copy mingw dependency libs: rtl_number.exe <<<\n"
-        for f in `ldd ${OPENFPGA_PACKAGE_DIR}/bin/rtl_number.exe | cut -d' ' -f 3 | grep mingw | uniq`; do cp -fv ${f} ${OPENFPGA_PACKAGE_DIR}/bin; done
         printf "\n\n >>>7zip setup <<<\n"
         export SEVENZIP_DIR_PATH=${PWD}/7zip
         mkdir -p ${SEVENZIP_DIR_PATH}
@@ -109,8 +106,8 @@ jobs:
         cd - &> /dev/null
         printf "\n\n >>> create packages <<<\n"
         cd ${OPENFPGA_PACKAGE_DIR}
-        ${SEVENZIP_FILE_PATH} a -mmt -mx3 -sfx${SEVENZIP_SFX_FILE_PATH_WIN} openfpga.sfx.exe * > /dev/null
-        mv openfpga.sfx.exe ${SOURCE_DIR}/
+        # ${SEVENZIP_FILE_PATH} a -mmt -mx3 -sfx${SEVENZIP_SFX_FILE_PATH_WIN} openfpga.sfx.exe * > /dev/null
+        # mv openfpga.sfx.exe ${SOURCE_DIR}/
         ${SEVENZIP_FILE_PATH} a -tzip openfpga.7z * > /dev/null
         mv openfpga.7z ${SOURCE_DIR}/
         cd - &> /dev/null
@@ -119,8 +116,7 @@ jobs:
       uses: actions/upload-artifact@v4.3.0
       if: ${{ success() }}
       with:
-        name: openfpga_build
-        retention-days: 3
-        path: |
-          openfpga.7z
-          openfpga.sfx.exe
+        name: openfpga-build-mingw-w64-x86_64-gcc
+        retention-days: 2
+        path: openfpga.7z
+        overwrite: true
