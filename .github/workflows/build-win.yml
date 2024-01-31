@@ -73,5 +73,5 @@ jobs:
         echo "${CMAKE_SOURCE_DIR_W}"
         export MSYS2_ARG_CONV_EXCL="../EXTERNAL/capnproto/c++/src/capnp/capnp.exe;${CMAKE_SOURCE_DIR_W}/build/openfpga/openfpga-gh/vtr-verilog-to-routing/libs/EXTERNAL/capnproto/c++/src/capnp/capnpc-c++.exe:."
         echo "${MSYS2_ARG_CONV_EXCL}"
-        cmake -G "MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=${PWD}/install -DOPENFPGA_WITH_YOSYS=OFF -DOPENFPGA_WITH_YOSYS_PLUGIN=OFF -DOPENFPGA_WITH_TEST=OFF -DOPENFPGA_WITH_VERSION=OFF -DOPENFPGA_WITH_SWIG=OFF -DHAVE_STRUCT_TIMESPEC=1 -DABC_USE_STDINT_H=1 -S ${PWD} -B ${PWD}/build
+        cmake -G "MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=${PWD}/install -DOPENFPGA_WITH_YOSYS=OFF -DOPENFPGA_WITH_YOSYS_PLUGIN=OFF -DOPENFPGA_WITH_TEST=OFF -DOPENFPGA_WITH_VERSION=OFF -DOPENFPGA_WITH_SWIG=OFF -DWITH_ABC=OFF  -DHAVE_STRUCT_TIMESPEC=1 -DABC_USE_STDINT_H=1 -S ${PWD} -B ${PWD}/build
         make install -C build -j$(nproc)
