@@ -1,0 +1,69 @@
+name: 'build-win'
+
+on:
+  push:
+
+jobs:
+  
+  msys2-windows-2022:
+
+    runs-on: windows-2022
+
+    defaults:
+      run:
+        shell: msys2 {0}
+        #shell: C:\msys64\msys2_shell.cmd -mingw64 -defterm -here -no-start {0}
+
+    steps:
+
+    - name: Cancel previous
+      uses: styfle/cancel-workflow-action@0.11.0
+      with:
+        access_token: ${{ github.token }}
+
+    - name: Checkout repo
+      uses: actions/checkout@v3
+      #with:
+        #submodules: recursive
+        #fetch-depth: 0
+
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        path-type: minimal
+        update: true
+        release: false
+        install: >-
+          base-devel
+          git
+          mingw-w64-x86_64-toolchain
+          mingw-w64-x86_64-cmake
+          mingw-w64-x86_64-qt6-base-debug
+          mingw-w64-x86_64-qt6
+          mingw-w64-x86_64-qt6-declarative-debug
+          mingw-w64-x86_64-tcl
+          mingw-w64-x86_64-zlib
+          mingw-w64-x86_64-libusb
+
+    - name: Show shell configuration
+      run: |
+        which git && git --version || true
+        which cmake && cmake --version || true
+        which make && make --version || true
+        which python && python --version || true
+        which ninja && ninja --version || true
+        which tclsh && echo 'puts [info patchlevel];exit 0' | tclsh || true
+
+    - name: Dump GitHub context
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: echo "$GITHUB_CONTEXT"
+
+    - name: Print Repo HEAD
+      run: |
+        echo && echo "git last log" && git log -1
+
+    - name: Build
+      run: |
+        make all BUILD_TYPE=$BUILD_TYPE CMAKE_FLAGS="-DOPENFPGA_WITH_YOSYS=OFF -DOPENFPGA_WITH_YOSYS_PLUGIN=OFF -DOPENFPGA_WITH_TEST=OFF -DOPENFPGA_WITH_VERSION=OFF -DOPENFPGA_WITH_SWIG=OFF"
