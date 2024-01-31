@@ -146,6 +146,14 @@ if(NOT MSVC)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3")
 endif()
 
+#The mingw-w64 headers and ABC's pthread.h have conflicting definitions of struct timespec.
+#Adding this define suppresses the duplicate definition in ABC's pthread.h
+add_definitions(-DHAVE_STRUCT_TIMESPEC=1)
+
+#This forces ABC to use the stdint types (e.g. ptrdiff_t) instead of its platform
+#dependant type look-up. This avoids 'unkown platform' compilation errors.
+add_definitions(-DABC_USE_STDINT_H=1)
+
 # Set WARN FLAGS
 set(WARN_FLAGS "")
 
