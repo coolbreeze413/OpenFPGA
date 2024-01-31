@@ -38,14 +38,14 @@ find_program(CMAKE_CXX_COMPILER NAMES ${MINGW_CXX})
 #
 # Set the target environment location
 #
-# SET(CMAKE_FIND_ROOT_PATH ${MINGW_ROOT_PATH})
+SET(CMAKE_FIND_ROOT_PATH ${MINGW_ROOT_PATH})
 
 # adjust the default behaviour of the FIND_XXX() commands:
 # search headers and libraries in the target environment, search 
 # programs in the host environment
-# set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-# set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-# set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
 #The mingw-w64 headers and ABC's pthread.h have conflicting definitions of struct timespec.
 #Adding this define suppresses the duplicate definition in ABC's pthread.h

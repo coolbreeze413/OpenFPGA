@@ -23,9 +23,9 @@ jobs:
 
     - name: Checkout repo
       uses: actions/checkout@v3
-      #with:
-        #submodules: recursive
-        #fetch-depth: 0
+      with:
+        submodules: recursive
+        fetch-depth: 0
 
     - name: Setup MSYS2
       uses: msys2/setup-msys2@v2
@@ -39,12 +39,11 @@ jobs:
           git
           mingw-w64-x86_64-toolchain
           mingw-w64-x86_64-cmake
-          mingw-w64-x86_64-qt6-base-debug
-          mingw-w64-x86_64-qt6
-          mingw-w64-x86_64-qt6-declarative-debug
           mingw-w64-x86_64-tcl
           mingw-w64-x86_64-zlib
           mingw-w64-x86_64-libusb
+          mingw-w64-x86_64-swig
+          mingw-w64-x86_64-python
 
     - name: Show shell configuration
       run: |
@@ -66,4 +65,13 @@ jobs:
 
     - name: Build
       run: |
-        make all CMAKE_FLAGS="-DOPENFPGA_WITH_YOSYS=OFF -DOPENFPGA_WITH_YOSYS_PLUGIN=OFF -DOPENFPGA_WITH_TEST=OFF -DOPENFPGA_WITH_VERSION=OFF -DOPENFPGA_WITH_SWIG=OFF -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/mingw-linux-cross-compile-to-windows.cmake"
+        which ${CC}
+        which ${CXX}
+        mkdir -p build
+        find ./vtr-verilog-to-routing/libs/libvtrutil/src/vtr_util.cpp -type f -exec sed -i 's-getdelim(-0;//-g' {} \;
+        export CMAKE_SOURCE_DIR_W=$(cygpath -w "$(CMAKE_SOURCE_DIR)" | sed 's;\\;/;g')
+        echo "${CMAKE_SOURCE_DIR_W}"
+        export MSYS2_ARG_CONV_EXCL="../EXTERNAL/capnproto/c++/src/capnp/capnp.exe;${CMAKE_SOURCE_DIR_W}/build/openfpga/openfpga-gh/vtr-verilog-to-routing/libs/EXTERNAL/capnproto/c++/src/capnp/capnpc-c++.exe:."
+        echo "${MSYS2_ARG_CONV_EXCL}"
+        cmake -G "MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=${PWD}/install -DOPENFPGA_WITH_YOSYS=OFF -DOPENFPGA_WITH_YOSYS_PLUGIN=OFF -DOPENFPGA_WITH_TEST=OFF -DOPENFPGA_WITH_VERSION=OFF -DOPENFPGA_WITH_SWIG=OFF -DHAVE_STRUCT_TIMESPEC=1 -DABC_USE_STDINT_H=1 -S ${PWD} -B ${PWD}/build
+        make install -C build -j$(nproc)
