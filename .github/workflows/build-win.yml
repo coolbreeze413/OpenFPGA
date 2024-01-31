@@ -63,12 +63,17 @@ jobs:
       run: |
         echo && echo "git last log" && git log -1
 
+    # https://sourceforge.net/p/mingw/mailman/message/5690922/
+    # https://github.com/capnproto/capnproto/issues/1458
     - name: Build
       run: |
         which gcc
         which g++
         mkdir -p build
         find ./vtr-verilog-to-routing/libs/libvtrutil/src/vtr_util.cpp -type f -exec sed -i 's-getdelim(-0;//-g' {} \;
+        find ./vtr-verilog-to-routing/libs/EXTERNAL/capnproto/c++/src/kj/test-helpers.c++ -type f -exec sed -i 's-needle.size()};-needle.end()};-g' {} \;
+        find ./vtr-verilog-to-routing/libs/EXTERNAL/capnproto/c++/ekam-provider/canonical/kj/test-helpers.c++ -type f -exec sed -i 's-needle.size()};-needle.end()};-g' {} \;
+        find ./vtr-verilog-to-routing/libs/EXTERNAL/capnproto/c++/ekam-provider/c++header/kj/test-helpers.c++ -type f -exec sed -i 's-needle.size()};-needle.end()};-g' {} \;
         export CMAKE_SOURCE_DIR_W=$(cygpath -w "${PWD}" | sed 's;\\;/;g')
         echo "${CMAKE_SOURCE_DIR_W}"
         export MSYS2_ARG_CONV_EXCL="../EXTERNAL/capnproto/c++/src/capnp/capnp.exe;${CMAKE_SOURCE_DIR_W}/build/openfpga/openfpga-gh/vtr-verilog-to-routing/libs/EXTERNAL/capnproto/c++/src/capnp/capnpc-c++.exe:."
