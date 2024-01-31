@@ -17,12 +17,12 @@ jobs:
     steps:
 
     - name: Cancel previous
-      uses: styfle/cancel-workflow-action@0.11.0
+      uses: styfle/cancel-workflow-action@0.12.1
       with:
         access_token: ${{ github.token }}
 
     - name: Checkout repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4.1.1
       with:
         submodules: recursive
         fetch-depth: 0
@@ -37,11 +37,11 @@ jobs:
         install: >-
           base-devel
           git
+          wget
           mingw-w64-x86_64-toolchain
           mingw-w64-x86_64-cmake
           mingw-w64-x86_64-tcl
           mingw-w64-x86_64-zlib
-          mingw-w64-x86_64-libusb
           mingw-w64-x86_64-swig
           mingw-w64-x86_64-python
 
@@ -67,6 +67,7 @@ jobs:
     # https://github.com/capnproto/capnproto/issues/1458
     - name: Build
       run: |
+        export SOURCE_DIR=${PWD}
         which gcc
         which g++
         mkdir -p build
@@ -78,5 +79,34 @@ jobs:
         echo "${CMAKE_SOURCE_DIR_W}"
         export MSYS2_ARG_CONV_EXCL="../EXTERNAL/capnproto/c++/src/capnp/capnp.exe;${CMAKE_SOURCE_DIR_W}/build/vtr-verilog-to-routing/libs/EXTERNAL/capnproto/c++/src/capnp/capnpc-c++.exe:."
         echo "${MSYS2_ARG_CONV_EXCL}"
-        cmake -G "MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=${PWD}/install -DOPENFPGA_WITH_YOSYS=OFF -DOPENFPGA_WITH_YOSYS_PLUGIN=OFF -DOPENFPGA_WITH_TEST=OFF -DOPENFPGA_WITH_VERSION=OFF -DOPENFPGA_WITH_SWIG=OFF -DWITH_ABC=OFF  -DHAVE_STRUCT_TIMESPEC=1 -DABC_USE_STDINT_H=1 -S ${PWD} -B ${PWD}/build
+        export OPENFPGA_INSTALL_DIR=${PWD}/install
+        cmake -G "MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=${OPENFPGA_INSTALL_DIR} -DOPENFPGA_WITH_YOSYS=OFF -DOPENFPGA_WITH_YOSYS_PLUGIN=OFF -DOPENFPGA_WITH_TEST=OFF -DOPENFPGA_WITH_VERSION=OFF -DOPENFPGA_WITH_SWIG=OFF -DWITH_ABC=OFF  -DHAVE_STRUCT_TIMESPEC=1 -DABC_USE_STDINT_H=1 -S ${PWD} -B ${PWD}/build
         make install -C build -j$(nproc)
+        for f in `ldd ${OPENFPGA_INSTALL_DIR}/bin/vpr.exe | cut -d' ' -f 3 | grep mingw | uniq`; do cp -fv $$f ${OPENFPGA_INSTALL_DIR}/bin; done
+        for f in `ldd ${OPENFPGA_INSTALL_DIR}/bin/openfpga.exe | cut -d' ' -f 3 | grep mingw | uniq`; do cp -fv $$f ${OPENFPGA_INSTALL_DIR}/bin; done
+        export 7ZIP_BASE_DIR_PATH=${PWD}/7zip
+        mkdir -p ${7ZIP_BASE_DIR_PATH}
+        export 7ZIP_DIR_PATH=${7ZIP_BASE_DIR_PATH}/7z2201-x64
+        export 7ZIP_FILE_PATH=${7ZIP_DIR_PATH}/7z.exe
+        export 7ZIP_SFX_FILE_PATH_WIN := $(cygpath -w "${7ZIP_DIR_PATH}/7z.sfx" | sed 's/\\/\\\\/g')
+        wget --quiet https://www.7-zip.org/a/7zr.exe --directory-prefix=${7ZIP_BASE_DIR_PATH}
+        wget --quiet https://www.7-zip.org/a/7z2201-x64.exe --directory-prefix=${7ZIP_BASE_DIR_PATH}
+        cd ${7ZIP_BASE_DIR_PATH}
+        7zr.exe x 7z2201-x64.exe -y > /dev/null
+        cd -
+        cd ${OPENFPGA_INSTALL_DIR}
+        ${7ZIP_FILE_PATH} a -mmt -mx3 -sfx${7ZIP_SFX_FILE_PATH_WIN} openfpga.sfx.exe * > /dev/null
+        mv openfpga.sfx.exe ${SOURCE_DIR}/
+        ${7ZIP_FILE_PATH} a -tzip openfpga.7z * > /dev/null
+        mv openfpga.7z ${SOURCE_DIR}/
+        cd -
+
+    - name: Upload OpenFPGA binaries
+      uses: actions/upload-artifact@v4.3.0
+      if: ${{ success() }}
+      with:
+        name: openfpga_build
+        retention-days: 3
+        path: |
+          openfpga.7z
+          openfpga.sfx.exe
