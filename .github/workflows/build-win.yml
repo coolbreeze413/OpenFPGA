@@ -67,36 +67,7 @@ jobs:
     # https://github.com/capnproto/capnproto/issues/1458
     - name: Build
       run: |
-        export SOURCE_DIR=${PWD}
-        which gcc
-        which g++
-        mkdir -p build
-        printf "\n\n >>> hotfixes <<<\n"
-        find ./vtr-verilog-to-routing/libs/libvtrutil/src/vtr_util.cpp -type f -exec sed -i 's-getdelim(-0;//-g' {} \;
-        find ./vtr-verilog-to-routing/libs/EXTERNAL/capnproto/c++/src/kj/test-helpers.c++ -type f -exec sed -i 's-needle.size()};-needle.end()};-g' {} \;
-        find ./vtr-verilog-to-routing/libs/EXTERNAL/capnproto/c++/ekam-provider/canonical/kj/test-helpers.c++ -type f -exec sed -i 's-needle.size()};-needle.end()};-g' {} \;
-        find ./vtr-verilog-to-routing/libs/EXTERNAL/capnproto/c++/ekam-provider/c++header/kj/test-helpers.c++ -type f -exec sed -i 's-needle.size()};-needle.end()};-g' {} \;
-        export CMAKE_SOURCE_DIR_W=$(cygpath -w "${PWD}" | sed 's;\\;/;g')
-        echo "${CMAKE_SOURCE_DIR_W}"
-        export MSYS2_ARG_CONV_EXCL="../EXTERNAL/capnproto/c++/src/capnp/capnp.exe;${CMAKE_SOURCE_DIR_W}/build/vtr-verilog-to-routing/libs/EXTERNAL/capnproto/c++/src/capnp/capnpc-c++.exe:."
-        echo "${MSYS2_ARG_CONV_EXCL}"
-        export OPENFPGA_INSTALL_DIR=${PWD}/install
-        printf "\n\n >>> cmake configure <<<\n"
-        cmake -G "MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=${OPENFPGA_INSTALL_DIR} -DOPENFPGA_WITH_YOSYS=OFF -DOPENFPGA_WITH_YOSYS_PLUGIN=OFF -DOPENFPGA_WITH_TEST=OFF -DOPENFPGA_WITH_VERSION=OFF -DOPENFPGA_WITH_SWIG=OFF -DWITH_ABC=OFF  -DHAVE_STRUCT_TIMESPEC=1 -DABC_USE_STDINT_H=1 -S ${PWD} -B ${PWD}/build
-        printf "\n\n >>> build and install <<<\n"
-        make install -C build -j$(nproc)
-        printf "\n\n >>>create package dir <<<\n"
-        export OPENFPGA_PACKAGE_DIR=${PWD}/package
-        mkdir -p ${OPENFPGA_PACKAGE_DIR}/bin
-        cp -fv ${OPENFPGA_INSTALL_DIR}/bin/* ${OPENFPGA_PACKAGE_DIR}/bin/
-        printf "\n\n >>> copy mingw dependency libs: vpr.exe <<<\n"
-        for f in `ldd ${OPENFPGA_PACKAGE_DIR}/bin/vpr.exe | cut -d' ' -f 3 | grep mingw | uniq`; do cp -fv ${f} ${OPENFPGA_PACKAGE_DIR}/bin; done
-        printf "\n\n >>> copy mingw dependency libs: openfpga.exe <<<\n"
-        for f in `ldd ${OPENFPGA_PACKAGE_DIR}/bin/openfpga.exe | cut -d' ' -f 3 | grep mingw | uniq`; do cp -fv ${f} ${OPENFPGA_PACKAGE_DIR}/bin; done
-        printf "\n\n >>> copy mingw dependency libs: genfasm.exe <<<\n"
-        for f in `ldd ${OPENFPGA_PACKAGE_DIR}/bin/genfasm.exe | cut -d' ' -f 3 | grep mingw | uniq`; do cp -fv ${f} ${OPENFPGA_PACKAGE_DIR}/bin; done
-        printf "\n\n >>> copy mingw dependency libs: rtl_number.exe <<<\n"
-        for f in `ldd ${OPENFPGA_PACKAGE_DIR}/bin/rtl_number.exe | cut -d' ' -f 3 | grep mingw | uniq`; do cp -fv ${f} ${OPENFPGA_PACKAGE_DIR}/bin; done
+        
         printf "\n\n >>>7zip setup <<<\n"
         export SEVENZIP_BASE_DIR_PATH=${PWD}/7zip
         mkdir -p ${SEVENZIP_BASE_DIR_PATH}
@@ -107,14 +78,10 @@ jobs:
         wget --quiet https://www.7-zip.org/a/7z2201-x64.exe --directory-prefix=${SEVENZIP_BASE_DIR_PATH}
         cd ${SEVENZIP_BASE_DIR_PATH}
         ${SEVENZIP_BASE_DIR_PATH}/7zr.exe x ${SEVENZIP_BASE_DIR_PATH}/7z2201-x64.exe -y > /dev/null
+        ls
+        ls ${SEVENZIP_DIR_PATH}
         cd -
-        printf "\n\n >>> create packages <<<\n"
-        cd ${OPENFPGA_PACKAGE_DIR}
-        ${SEVENZIP_FILE_PATH} a -mmt -mx3 -sfx${SEVENZIP_SFX_FILE_PATH_WIN} openfpga.sfx.exe * > /dev/null
-        mv openfpga.sfx.exe ${SOURCE_DIR}/
-        ${SEVENZIP_FILE_PATH} a -tzip openfpga.7z * > /dev/null
-        mv openfpga.7z ${SOURCE_DIR}/
-        cd -
+        
 
     - name: Upload OpenFPGA binaries
       uses: actions/upload-artifact@v4.3.0
