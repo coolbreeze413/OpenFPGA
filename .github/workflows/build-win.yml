@@ -97,7 +97,7 @@ jobs:
         mkdir -p ${SEVENZIP_BASE_DIR_PATH}
         export SEVENZIP_DIR_PATH=${SEVENZIP_BASE_DIR_PATH}/7z2201-x64
         export SEVENZIP_FILE_PATH=${SEVENZIP_DIR_PATH}/7z.exe
-        export SEVENZIP_SFX_FILE_PATH_WIN := $(cygpath -w "${SEVENZIP_DIR_PATH}/7z.sfx" | sed 's/\\/\\\\/g')
+        export SEVENZIP_SFX_FILE_PATH_WIN=$(cygpath -w "${SEVENZIP_DIR_PATH}/7z.sfx" | sed 's/\\/\\\\/g')
         wget --quiet https://www.7-zip.org/a/7zr.exe --directory-prefix=${SEVENZIP_BASE_DIR_PATH}
         wget --quiet https://www.7-zip.org/a/7z2201-x64.exe --directory-prefix=${SEVENZIP_BASE_DIR_PATH}
         cd ${SEVENZIP_BASE_DIR_PATH}
