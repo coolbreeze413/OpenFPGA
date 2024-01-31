@@ -89,9 +89,14 @@ jobs:
         export OPENFPGA_PACKAGE_DIR=${PWD}/package
         mkdir -p ${OPENFPGA_PACKAGE_DIR}/bin
         cp -fv ${OPENFPGA_INSTALL_DIR}/bin/* ${OPENFPGA_PACKAGE_DIR}/bin/
-        printf "\n\n >>> copy mingw dependency libs <<<\n"
+        printf "\n\n >>> copy mingw dependency libs: vpr.exe <<<\n"
         for f in `ldd ${OPENFPGA_PACKAGE_DIR}/bin/vpr.exe | cut -d' ' -f 3 | grep mingw | uniq`; do cp -fv ${f} ${OPENFPGA_PACKAGE_DIR}/bin; done
+        printf "\n\n >>> copy mingw dependency libs: openfpga.exe <<<\n"
         for f in `ldd ${OPENFPGA_PACKAGE_DIR}/bin/openfpga.exe | cut -d' ' -f 3 | grep mingw | uniq`; do cp -fv ${f} ${OPENFPGA_PACKAGE_DIR}/bin; done
+        printf "\n\n >>> copy mingw dependency libs: genfasm.exe <<<\n"
+        for f in `ldd ${OPENFPGA_PACKAGE_DIR}/bin/genfasm.exe | cut -d' ' -f 3 | grep mingw | uniq`; do cp -fv ${f} ${OPENFPGA_PACKAGE_DIR}/bin; done
+        printf "\n\n >>> copy mingw dependency libs: rtl_number.exe <<<\n"
+        for f in `ldd ${OPENFPGA_PACKAGE_DIR}/bin/rtl_number.exe | cut -d' ' -f 3 | grep mingw | uniq`; do cp -fv ${f} ${OPENFPGA_PACKAGE_DIR}/bin; done
         printf "\n\n >>>7zip setup <<<\n"
         export SEVENZIP_BASE_DIR_PATH=${PWD}/7zip
         mkdir -p ${SEVENZIP_BASE_DIR_PATH}
@@ -101,7 +106,7 @@ jobs:
         wget --quiet https://www.7-zip.org/a/7zr.exe --directory-prefix=${SEVENZIP_BASE_DIR_PATH}
         wget --quiet https://www.7-zip.org/a/7z2201-x64.exe --directory-prefix=${SEVENZIP_BASE_DIR_PATH}
         cd ${SEVENZIP_BASE_DIR_PATH}
-        7zr.exe x 7z2201-x64.exe -y > /dev/null
+        ${SEVENZIP_BASE_DIR_PATH}/7zr.exe x ${SEVENZIP_BASE_DIR_PATH}/7z2201-x64.exe -y > /dev/null
         cd -
         printf "\n\n >>> create packages <<<\n"
         cd ${OPENFPGA_PACKAGE_DIR}
