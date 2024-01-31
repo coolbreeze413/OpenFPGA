@@ -65,8 +65,8 @@ jobs:
 
     - name: Build
       run: |
-        which ${CC}
-        which ${CXX}
+        which gcc
+        which g++
         mkdir -p build
         find ./vtr-verilog-to-routing/libs/libvtrutil/src/vtr_util.cpp -type f -exec sed -i 's-getdelim(-0;//-g' {} \;
         export CMAKE_SOURCE_DIR_W=$(cygpath -w "$(CMAKE_SOURCE_DIR)" | sed 's;\\;/;g')
