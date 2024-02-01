@@ -152,12 +152,16 @@ jobs:
         cp -fv ${INSTALL_DIR}/bin/vpr.exe ${PACKAGE_DIR}/bin/
         cp -fv ${INSTALL_DIR}/bin/openfpga.exe ${PACKAGE_DIR}/bin/
         #
-        printf "\n\n >>> copy mingw dependency libs: vpr.exe <<<\n"
+        printf "\n\n >>> ${{ matrix.msystem }} dependency libs: vpr.exe <<<\n"
+        printf "\nldd output:"
         ldd ${PACKAGE_DIR}/bin/vpr.exe
-        for f in `ldd ${PACKAGE_DIR}/bin/vpr.exe | cut -d' ' -f 3 | grep mingw | uniq`; do cp -fv ${f} ${PACKAGE_DIR}/bin; done
-        printf "\n\n >>> copy mingw dependency libs: openfpga.exe <<<\n"
+        printf "\ncopy libs:"
+        for f in `ldd ${PACKAGE_DIR}/bin/vpr.exe | cut -d' ' -f 3 | grep "${{ matrix.msystem }}" | uniq`; do cp -fv ${f} ${PACKAGE_DIR}/bin; done
+        printf "\n\n >>> ${{ matrix.msystem }} dependency libs: openfpga.exe <<<\n"
+        printf "\nldd output:"
         ldd ${PACKAGE_DIR}/bin/openfpga.exe
-        for f in `ldd ${PACKAGE_DIR}/bin/openfpga.exe | cut -d' ' -f 3 | grep mingw | uniq`; do cp -fv ${f} ${PACKAGE_DIR}/bin; done
+        printf "\ncopy libs:"
+        for f in `ldd ${PACKAGE_DIR}/bin/openfpga.exe | cut -d' ' -f 3 | grep "${{ matrix.msystem }}" | uniq`; do cp -fv ${f} ${PACKAGE_DIR}/bin; done
         #
         printf "\n\n >>> create packages <<<\n"
         cd ${PACKAGE_DIR}
