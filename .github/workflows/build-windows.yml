@@ -5,7 +5,7 @@ on:
 
 jobs:
   
-  build-msys2-windows-2022:
+  build-msys2:
 
     strategy:
       fail-fast: false
@@ -118,7 +118,7 @@ jobs:
         find ./vtr-verilog-to-routing/libs/EXTERNAL/capnproto/c++/src/kj/test-helpers.c++ -type f -exec sed -i 's-needle.size()};-needle.end()};-g' {} \;
         find ./vtr-verilog-to-routing/libs/EXTERNAL/capnproto/c++/ekam-provider/canonical/kj/test-helpers.c++ -type f -exec sed -i 's-needle.size()};-needle.end()};-g' {} \;
         find ./vtr-verilog-to-routing/libs/EXTERNAL/capnproto/c++/ekam-provider/c++header/kj/test-helpers.c++ -type f -exec sed -i 's-needle.size()};-needle.end()};-g' {} \;
-        export CMAKE_SOURCE_DIR_PATH=$(cygpath -w "${PWD}" | sed 's;\\;/;g')
+        export CMAKE_SOURCE_DIR_PATH_W=$(cygpath -w "${PWD}" | sed 's;\\;/;g')
         echo "${CMAKE_SOURCE_DIR_PATH_W}"
         export MSYS2_ARG_CONV_EXCL="../EXTERNAL/capnproto/c++/src/capnp/capnp.exe;${CMAKE_SOURCE_DIR_PATH_W}/build/vtr-verilog-to-routing/libs/EXTERNAL/capnproto/c++/src/capnp/capnpc-c++.exe:."
         echo "${MSYS2_ARG_CONV_EXCL}"
@@ -181,3 +181,109 @@ jobs:
         retention-days: 2
         path: openfpga-${{ env.COMMIT_SHA1 }}-${{ matrix.msystem }}.7z
         overwrite: true
+
+  build-msvc:
+
+    runs-on: windows-2022
+
+    defaults:
+      run:
+        shell: cmd
+
+    steps:
+
+    - name: Cancel previous
+      uses: styfle/cancel-workflow-action@0.12.1
+      with:
+        access_token: ${{ github.token }}
+
+    - name: Setup cmake
+      uses: jwlawson/actions-setup-cmake@v1.13.0
+      with:
+        cmake-version: '3.21.3'
+
+    - name: Use cmake
+      run: cmake --version
+
+    - name: Install Core Dependencies
+      run: |
+        choco install -y make
+
+    - name: Setup Python
+      uses: actions/setup-python@v4.3.0
+      with:
+        python-version: 3.8
+        architecture: x64
+
+    - name: Install libusb with vcpkg
+      run: |
+        C:\vcpkg\vcpkg.exe install libusb:x64-windows
+        C:\vcpkg\vcpkg.exe integrate install
+
+    - name: Install nasm with choco
+      run: |
+        choco install -y nasm
+        ls "C:\Program Files\NASM"
+
+    - run: git config --global core.autocrlf input
+      shell: bash
+
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Prebuild
+      run: |
+        export COMMIT_SHA1=$(git rev-parse --short HEAD)
+        echo "COMMIT_SHA1=${COMMIT_SHA1}" >> $GITHUB_ENV
+        printf "COMMIT_SHA1=${COMMIT_SHA1}"
+        #
+        export SOURCE_DIR=${PWD}
+        echo "SOURCE_DIR=${SOURCE_DIR}" >> $GITHUB_ENV
+        #
+        export BUILD_DIR=${PWD}/build
+        echo "BUILD_DIR=${BUILD_DIR}" >> $GITHUB_ENV
+        #
+        export INSTALL_DIR=${SOURCE_DIR}/install
+        echo "INSTALL_DIR=${INSTALL_DIR}" >> $GITHUB_ENV
+        #
+        mkdir -p ${SOURCE_DIR}/build
+        #
+        printf "\n\n >>> hotfixes <<<\n"
+        find ./vtr-verilog-to-routing/libs/libvtrutil/src/vtr_util.cpp -type f -exec sed -i 's-getdelim(-0;//-g' {} \;
+        find ./vtr-verilog-to-routing/libs/EXTERNAL/capnproto/c++/src/kj/test-helpers.c++ -type f -exec sed -i 's-needle.size()};-needle.end()};-g' {} \;
+        find ./vtr-verilog-to-routing/libs/EXTERNAL/capnproto/c++/ekam-provider/canonical/kj/test-helpers.c++ -type f -exec sed -i 's-needle.size()};-needle.end()};-g' {} \;
+        find ./vtr-verilog-to-routing/libs/EXTERNAL/capnproto/c++/ekam-provider/c++header/kj/test-helpers.c++ -type f -exec sed -i 's-needle.size()};-needle.end()};-g' {} \;
+      shell: bash
+        
+    - name: Build & Test
+      run: |
+        call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+
+        set CMAKE_GENERATOR=Ninja
+        set CC=cl
+        set CXX=cl
+        set NO_TCMALLOC=On
+        set PREFIX=%GITHUB_WORKSPACE%\install
+        set CPU_CORES=%NUMBER_OF_PROCESSORS%
+
+        set MAKE_DIR=C:\make\bin
+        #set TCL_DIR=%PROGRAMFILES%\Git\mingw64\bin
+        set PATH=%pythonLocation%;%MAKE_DIR%;C:\Program Files\NASM;%PATH%
+        #set PATH=%pythonLocation%;%MAKE_DIR%;%TCL_DIR%;%PATH%
+
+        set
+        where cmake && cmake --version
+        where make && make --version
+        where python && python --version
+        where ninja && ninja --version
+
+        #
+        printf "\n\n >>> cmake configure <<<\n"
+        cmake -G "Ninja" -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DOPENFPGA_WITH_YOSYS=OFF -DOPENFPGA_WITH_YOSYS_PLUGIN=OFF -DOPENFPGA_WITH_TEST=OFF -DOPENFPGA_WITH_VERSION=OFF -DOPENFPGA_WITH_SWIG=OFF -DWITH_ABC=OFF  -DHAVE_STRUCT_TIMESPEC=1 -DABC_USE_STDINT_H=1 -S ${SOURCE_DIR} -B ${BUILD_DIR}
+        #
+        printf "\n\n >>> build and install <<<\n"
+        cmake --build ${BUILD_DIR} -j $(CPU_CORES)
+        cmake --install ${BUILD_DIR}
+
