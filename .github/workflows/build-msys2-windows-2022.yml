@@ -1,0 +1,166 @@
+name: 'build-win'
+
+on:
+  push:
+
+jobs:
+  
+  build-msys2-windows-2022:
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - msystem: MINGW64
+            runner: windows-2022
+          - msystem: UCRT64
+            runner: windows-2022
+          - msystem: CLANG64
+            runner: windows-2022
+
+    runs-on: ${{ matrix.runner }}
+
+    defaults:
+      run:
+        shell: msys2 {0}
+        #shell: C:\msys64\msys2_shell.cmd -mingw64 -defterm -here -no-start {0}
+
+    steps:
+
+    - name: Cancel Previous
+      uses: styfle/cancel-workflow-action@0.12.1
+      with:
+        access_token: ${{ github.token }}
+
+    - name: Checkout Repo
+      uses: actions/checkout@v4.1.1
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: ${{ matrix.msystem }}
+        path-type: minimal
+        update: true
+        release: false
+        install: >-
+          base-devel
+          git
+          wget
+          mingw-w64-x86_64-toolchain
+          mingw-w64-x86_64-cmake
+          mingw-w64-x86_64-tcl
+          mingw-w64-x86_64-zlib
+          mingw-w64-x86_64-swig
+          mingw-w64-x86_64-python
+
+    - name: Show Shell Configuration
+      run: |
+        which git && git --version || true
+        which cmake && cmake --version || true
+        which make && make --version || true
+        which python && python --version || true
+        which ninja && ninja --version || true
+        which tclsh && echo 'puts [info patchlevel];exit 0' | tclsh || true
+
+    - name: Print Compiler Info
+      run: |
+        printf("\n")
+        printf "$(which gcc)\n"
+        printf "$(gcc -v)\n"
+        printf("\n")
+        printf "$(which g++)\n"
+        printf "$(g++ -v)\n"
+        printf("\n")
+        printf "$(which ld)\n"
+        printf "$(ld -v)\n"
+
+    - name: Dump GitHub Context
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: echo "$GITHUB_CONTEXT"
+
+    - name: Print Repo HEAD
+      run: |
+        echo && echo "git last log" && git log -1
+
+    # https://sourceforge.net/p/mingw/mailman/message/5690922/
+    # https://github.com/capnproto/capnproto/issues/1458
+    - name: Build
+      run: |
+        export COMMIT_SHA1=$(git rev-parse --short HEAD)
+        echo "COMMIT_SHA1=${COMMIT_SHA1}" >> $GITHUB_ENV
+        #
+        export SOURCE_DIR=${PWD}
+        echo "SOURCE_DIR=${SOURCE_DIR}" >> $GITHUB_ENV
+        #
+        export BUILD_DIR=${PWD}/build
+        echo "BUILD_DIR=${BUILD_DIR}" >> $GITHUB_ENV
+        #
+        export INSTALL_DIR=${SOURCE_DIR}/install
+        echo "INSTALL_DIR=${INSTALL_DIR}" >> $GITHUB_ENV
+        #
+        mkdir -p ${SOURCE_DIR}/build
+        #
+        printf "\n\n >>> hotfixes <<<\n"
+        find ./vtr-verilog-to-routing/libs/libvtrutil/src/vtr_util.cpp -type f -exec sed -i 's-getdelim(-0;//-g' {} \;
+        find ./vtr-verilog-to-routing/libs/EXTERNAL/capnproto/c++/src/kj/test-helpers.c++ -type f -exec sed -i 's-needle.size()};-needle.end()};-g' {} \;
+        find ./vtr-verilog-to-routing/libs/EXTERNAL/capnproto/c++/ekam-provider/canonical/kj/test-helpers.c++ -type f -exec sed -i 's-needle.size()};-needle.end()};-g' {} \;
+        find ./vtr-verilog-to-routing/libs/EXTERNAL/capnproto/c++/ekam-provider/c++header/kj/test-helpers.c++ -type f -exec sed -i 's-needle.size()};-needle.end()};-g' {} \;
+        export CMAKE_SOURCE_DIR_PATH=$(cygpath -w "${PWD}" | sed 's;\\;/;g')
+        echo "${CMAKE_SOURCE_DIR_PATH_W}"
+        export MSYS2_ARG_CONV_EXCL="../EXTERNAL/capnproto/c++/src/capnp/capnp.exe;${CMAKE_SOURCE_DIR_PATH_W}/build/vtr-verilog-to-routing/libs/EXTERNAL/capnproto/c++/src/capnp/capnpc-c++.exe:."
+        echo "${MSYS2_ARG_CONV_EXCL}"
+        #
+        printf "\n\n >>> cmake configure <<<\n"
+        cmake -G "MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DOPENFPGA_WITH_YOSYS=OFF -DOPENFPGA_WITH_YOSYS_PLUGIN=OFF -DOPENFPGA_WITH_TEST=OFF -DOPENFPGA_WITH_VERSION=OFF -DOPENFPGA_WITH_SWIG=OFF -DWITH_ABC=OFF  -DHAVE_STRUCT_TIMESPEC=1 -DABC_USE_STDINT_H=1 -S ${SOURCE_DIR} -B ${BUILD_DIR}
+        #
+        printf "\n\n >>> build and install <<<\n"
+        make install -C ${BUILD_DIR} -j$(nproc)
+
+    - name: Install 7zip
+      run: |
+        printf "\n\n >>>7zip setup <<<\n"
+        export SEVENZIP_DIR_PATH=${SOURCE_DIR}/7zip
+        mkdir -p ${SEVENZIP_DIR_PATH}
+        export SEVENZIP_FILE_PATH=${SEVENZIP_DIR_PATH}/7z.exe
+        echo "SEVENZIP_FILE_PATH=${SEVENZIP_FILE_PATH}" >> $GITHUB_ENV
+        export SEVENZIP_SFX_FILE_PATH_W=$(cygpath -w "${SEVENZIP_DIR_PATH}/7z.sfx" | sed 's/\\/\\\\/g')
+        echo "SEVENZIP_SFX_FILE_PATH_W=${SEVENZIP_SFX_FILE_PATH_W}" >> $GITHUB_ENV
+        wget --quiet https://www.7-zip.org/a/7zr.exe --directory-prefix=${SEVENZIP_DIR_PATH}
+        wget --quiet https://www.7-zip.org/a/7z2201-x64.exe --directory-prefix=${SEVENZIP_DIR_PATH}
+        cd ${SEVENZIP_DIR_PATH}
+        ${SEVENZIP_DIR_PATH}/7zr.exe x ${SEVENZIP_DIR_PATH}/7z2201-x64.exe -y > /dev/null
+        cd - &> /dev/null
+
+    - name: Create Package
+      run: |
+        printf "\n\n >>>create package dir, copy binaries <<<\n"
+        export PACKAGE_DIR=${SOURCE_DIR}/package
+        mkdir -p ${PACKAGE_DIR}/bin
+        cp -fv ${INSTALL_DIR}/bin/vpr.exe ${PACKAGE_DIR}/bin/
+        cp -fv ${INSTALL_DIR}/bin/openfpga.exe ${PACKAGE_DIR}/bin/
+        #
+        printf "\n\n >>> copy mingw dependency libs: vpr.exe <<<\n"
+        for f in `ldd ${PACKAGE_DIR}/bin/vpr.exe | cut -d' ' -f 3 | grep mingw | uniq`; do cp -fv ${f} ${PACKAGE_DIR}/bin; done
+        printf "\n\n >>> copy mingw dependency libs: openfpga.exe <<<\n"
+        for f in `ldd ${PACKAGE_DIR}/bin/openfpga.exe | cut -d' ' -f 3 | grep mingw | uniq`; do cp -fv ${f} ${PACKAGE_DIR}/bin; done
+        #
+        printf "\n\n >>> create packages <<<\n"
+        cd ${PACKAGE_DIR}
+        # ${SEVENZIP_FILE_PATH} a -mmt -mx3 -sfx${SEVENZIP_SFX_FILE_PATH_W} openfpga.sfx.exe * > /dev/null
+        # mv ${PACKAGE_DIR}/openfpga.sfx.exe ${SOURCE_DIR}/openfpga-${{ matrix.msystem }}.sfx.exe
+        ${SEVENZIP_FILE_PATH} a -tzip openfpga.7z * > /dev/null
+        mv ${PACKAGE_DIR}/openfpga.7z ${SOURCE_DIR}/openfpga-${{ matrix.msystem }}.7z
+        cd - &> /dev/null
+
+    - name: Upload OpenFPGA Package
+      uses: actions/upload-artifact@v4.3.0
+      if: ${{ success() }}
+      with:
+        name: openfpga-build-${COMMIT_SHA1}-${{ matrix.msystem }}
+        retention-days: 2
+        path: openfpga-${COMMIT_SHA1}-${{ matrix.msystem }}.7z
+        overwrite: true
