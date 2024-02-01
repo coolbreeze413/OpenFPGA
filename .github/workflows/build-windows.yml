@@ -240,13 +240,16 @@ jobs:
         printf "COMMIT_SHA1=${COMMIT_SHA1}"
         #
         export SOURCE_DIR=${PWD}
-        echo "SOURCE_DIR=${SOURCE_DIR}" >> $GITHUB_ENV
+        export SOURCE_DIR_W=$(cygpath -w "${SOURCE_DIR}" | sed 's;\\;/;g')
+        echo "SOURCE_DIR_W=${SOURCE_DIR_W}" >> $GITHUB_ENV
         #
         export BUILD_DIR=${PWD}/build
-        echo "BUILD_DIR=${BUILD_DIR}" >> $GITHUB_ENV
+        export BUILD_DIR_W=$(cygpath -w "${BUILD_DIR}" | sed 's;\\;/;g')
+        echo "BUILD_DIR_W=${BUILD_DIR_W}" >> $GITHUB_ENV
         #
         export INSTALL_DIR=${SOURCE_DIR}/install
-        echo "INSTALL_DIR=${INSTALL_DIR}" >> $GITHUB_ENV
+        export INSTALL_DIR_W=$(cygpath -w "${INSTALL_DIR}" | sed 's;\\;/;g')
+        echo "INSTALL_DIR_W=${INSTALL_DIR_W}" >> $GITHUB_ENV
         #
         mkdir -p ${SOURCE_DIR}/build
         #
@@ -281,9 +284,9 @@ jobs:
 
         #
         printf "\n\n >>> cmake configure <<<\n"
-        cmake -G "Ninja" -DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% -DOPENFPGA_WITH_YOSYS=OFF -DOPENFPGA_WITH_YOSYS_PLUGIN=OFF -DOPENFPGA_WITH_TEST=OFF -DOPENFPGA_WITH_VERSION=OFF -DOPENFPGA_WITH_SWIG=OFF -DWITH_ABC=OFF  -DHAVE_STRUCT_TIMESPEC=1 -DABC_USE_STDINT_H=1 -S %SOURCE_DIR% -B %BUILD_DIR%
+        cmake -G "Ninja" -DCMAKE_INSTALL_PREFIX=%INSTALL_DIR_W% -DOPENFPGA_WITH_YOSYS=OFF -DOPENFPGA_WITH_YOSYS_PLUGIN=OFF -DOPENFPGA_WITH_TEST=OFF -DOPENFPGA_WITH_VERSION=OFF -DOPENFPGA_WITH_SWIG=OFF -DWITH_ABC=OFF  -DHAVE_STRUCT_TIMESPEC=1 -DABC_USE_STDINT_H=1 -S %SOURCE_DIR_W% -B %BUILD_DIR_W%
         #
         printf "\n\n >>> build and install <<<\n"
-        cmake --build %BUILD_DIR% -j%CPU_CORES%
-        cmake --install %BUILD_DIR%
+        cmake --build %BUILD_DIR_W% -j%CPU_CORES%
+        cmake --install %BUILD_DIR_W%
 
