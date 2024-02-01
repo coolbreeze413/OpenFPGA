@@ -11,11 +11,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - msystem: MINGW64
+          - msystem: mingw64
+            env: x86_64
             runner: windows-2022
-          - msystem: UCRT64
+          - msystem: ucrt64
+            env: ucrt-x86_64
             runner: windows-2022
-          - msystem: CLANG64
+          - msystem: clang64
+            env: clang-x86_64
             runner: windows-2022
 
     runs-on: ${{ matrix.runner }}
@@ -49,12 +52,12 @@ jobs:
           base-devel
           git
           wget
-          mingw-w64-x86_64-toolchain
-          mingw-w64-x86_64-cmake
-          mingw-w64-x86_64-tcl
-          mingw-w64-x86_64-zlib
-          mingw-w64-x86_64-swig
-          mingw-w64-x86_64-python
+          mingw-w64-${{ matrix.env }}-toolchain
+          mingw-w64-${{ matrix.env }}-cmake
+          mingw-w64-${{ matrix.env }}-tcl
+          mingw-w64-${{ matrix.env }}-zlib
+          mingw-w64-${{ matrix.env }}-swig
+          mingw-w64-${{ matrix.env }}-python
 
     - name: Show Shell Configuration
       run: |
