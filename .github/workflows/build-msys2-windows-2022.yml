@@ -17,9 +17,14 @@ jobs:
           - msystem: ucrt64
             env: ucrt-x86_64
             runner: windows-2022
-          - msystem: clang64
-            env: clang-x86_64
-            runner: windows-2022
+          # clang version 17.0.6
+          # Target: x86_64-w64-windows-gnu
+          # Thread model: posix
+          # D:/a/OpenFPGA/OpenFPGA/vtr-verilog-to-routing/libs/librrgraph/src/base/rr_graph_storage.cpp:425:10: note: in instantiation of function template specialization 'std::sort<edge_sort_iterator, edge_compare_dest_node>' requested here std::sort(
+          # C:/msys64/clang64/include/c++/v1/__algorithm/sort.h:647:5: error: indirection requires pointer operand ('const edge_sort_iterator' invalid)*__begin = _Ops::__iter_move(__pivot_pos);
+          # - msystem: clang64
+          #   env: clang-x86_64
+          #   runner: windows-2022
 
     runs-on: ${{ matrix.runner }}
 
@@ -148,8 +153,10 @@ jobs:
         cp -fv ${INSTALL_DIR}/bin/openfpga.exe ${PACKAGE_DIR}/bin/
         #
         printf "\n\n >>> copy mingw dependency libs: vpr.exe <<<\n"
+        ldd ${PACKAGE_DIR}/bin/vpr.exe
         for f in `ldd ${PACKAGE_DIR}/bin/vpr.exe | cut -d' ' -f 3 | grep mingw | uniq`; do cp -fv ${f} ${PACKAGE_DIR}/bin; done
         printf "\n\n >>> copy mingw dependency libs: openfpga.exe <<<\n"
+        ldd ${PACKAGE_DIR}/bin/openfpga.exe
         for f in `ldd ${PACKAGE_DIR}/bin/openfpga.exe | cut -d' ' -f 3 | grep mingw | uniq`; do cp -fv ${f} ${PACKAGE_DIR}/bin; done
         #
         printf "\n\n >>> create packages <<<\n"
